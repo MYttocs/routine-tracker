@@ -1,20 +1,16 @@
+/* Palette: iPhone-style dark mode. Colour only where it carries meaning:
+   rose = skincare, plum = haircare. Cards are always neutral. */
 :root {
   color-scheme: dark;
-  --bg: #111111;
-  --line: #3a3a3a;
-  --card: #4a4a4a;
-  --hair: #2f1d52;
-  --hair-accent: #b9a3e8;
-  --text: #f5f5f5;
-  --muted: #b0b0b0;
-  --day: #9e9e9e;
-  --day-logged: #4b7783;
-  --accent: #e8e8e8;
-  --sheet: #1c1c1c;
-  --btn: #262626;
-  --m-bha: #f2c46d;
-  --m-retinoid: #ef8fb3;
-  --m-hair: #b9a3e8;
+  --bg: #000000;             /* app background */
+  --card: #1C1C1E;           /* cards and the bottom sheet */
+  --card-raised: #2C2C2E;    /* selected day, pressed states, secondary buttons */
+  --divider: #38383A;        /* lines inside cards */
+  --text: #F5F5F7;           /* main text */
+  --text-secondary: #98989F; /* times, labels, "last one Oct 30" */
+  --skin: #E8A0B4;           /* rose: skincare */
+  --hair: #A98BD8;           /* plum: haircare */
+  --on-skin: #1C1C1E;        /* text on the rose (and plum) button */
 }
 
 * { box-sizing: border-box; }
@@ -49,7 +45,7 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--text);
   outline-offset: 2px;
 }
 
@@ -69,7 +65,7 @@ button:focus-visible {
 /* ---------- Date strip ---------- */
 
 .strip {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--divider);
 }
 
 /* Weeks sit side by side; swipe sideways to go back in time. */
@@ -91,7 +87,46 @@ button:focus-visible {
   padding: 0 8px;
 }
 
-/* Markers: a different shape per product so they read at a small size. */
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0 6px;
+  background: none;
+  border: none;
+}
+
+.day .letter {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Numbers are plain text; only the selected day gets a circle. */
+.day .num {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.day.selected .num {
+  background: var(--card-raised);
+  border-color: var(--text);
+}
+
+.day:active .num { background: var(--card-raised); }
+
+.day:disabled { cursor: default; }
+.day:disabled .num { color: var(--text-secondary); opacity: 0.5; }
+
+/* Markers are the only colour in the strip.
+   BHA: filled rose dot. Serum: rose ring. Hair mask: plum diamond. */
 .marks {
   display: flex;
   align-items: center;
@@ -109,22 +144,22 @@ button:focus-visible {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--m-bha);
+  background: var(--skin);
 }
 
 .mark.retinoid {
-  width: 7px;
-  height: 7px;
-  margin: 0 1px;
-  transform: rotate(45deg);
-  background: var(--m-retinoid);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--skin);
 }
 
 .mark.hair {
-  width: 10px;
-  height: 9px;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  background: var(--m-hair);
+  width: 6px;
+  height: 6px;
+  margin: 0 1px;
+  transform: rotate(45deg);
+  background: var(--hair);
 }
 
 .legend {
@@ -134,13 +169,25 @@ button:focus-visible {
   margin: 4px 0 0;
   padding: 0 16px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 .legend span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ---------- Sections and cards ---------- */
+
+.section {
+  padding: 0 16px;
+}
+
+.section h2 {
+  margin: 28px 0 16px;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .section-head {
@@ -155,94 +202,25 @@ button:focus-visible {
 
 .go-today {
   padding: 6px 14px;
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 999px;
-  background: none;
+  background: var(--card-raised);
   font-size: 14px;
 }
 
 .go-today[hidden], .add-forgot[hidden] { display: none; }
 
-.add-forgot {
-  width: 100%;
-  margin-top: 16px;
-  min-height: 54px;
-  border: 1px dashed var(--line);
-  border-radius: 24px;
-  background: none;
-  font-size: 16px;
-  color: var(--muted);
-}
-
-.day {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 0 6px;
-  background: none;
-  border: none;
-}
-
-/* The selected day is marked by a small arrow under the line. */
-.day.selected::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 7px solid transparent;
-  border-top-color: var(--line);
-}
-
-.day .letter {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.day .num {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--day);
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.day.logged .num { background: var(--day-logged); }
-
-.day:disabled { cursor: default; }
-.day:disabled .num { opacity: 0.35; }
-
-/* ---------- Sections and cards ---------- */
-
-.section {
-  padding: 0 16px;
-}
-
-.section h2 {
-  margin: 28px 0 16px;
-  font-size: 22px;
-  font-weight: 700;
-}
-
 .cards {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .card {
   background: var(--card);
-  border-radius: 24px;
-  padding: 18px 22px 20px;
+  border-radius: 20px;
+  padding: 16px 20px 18px;
 }
-
-.card.hair-track { background: var(--hair); }
 
 .card-head {
   display: flex;
@@ -250,15 +228,21 @@ button:focus-visible {
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid currentColor;
+  border-bottom: 1px solid var(--divider);
   min-height: 40px;
 }
 
 .card-head h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
+
+/* Small labels carry the routine's colour. */
+.card.skin .card-head h3 { color: var(--skin); }
+.card.hair .card-head h3 { color: var(--hair); }
 
 .card p {
   margin: 12px 0 0;
@@ -266,13 +250,20 @@ button:focus-visible {
   line-height: 1.35;
 }
 
+.card .time {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.card .time + p { margin-top: 4px; }
+
 .card .meta {
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-top: 6px;
 }
 
-.card.hair-track .meta { color: var(--hair-accent); }
+.card .meta .progress { color: var(--hair); }
 
 .add {
   width: 40px;
@@ -280,7 +271,7 @@ button:focus-visible {
   margin: -8px -8px -8px 0;
   border: none;
   background: none;
-  color: var(--hair-accent);
+  color: var(--hair);
   font-size: 30px;
   font-weight: 300;
   line-height: 1;
@@ -289,20 +280,30 @@ button:focus-visible {
 .undo {
   border: none;
   background: none;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 14px;
   padding: 8px;
   margin: -8px -8px -8px 0;
-  text-decoration: underline;
 }
 
 .empty {
   margin: 0;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 15px;
 }
 
-button:active { opacity: 0.7; }
+.add-forgot {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 52px;
+  border: 1px dashed var(--divider);
+  border-radius: 20px;
+  background: none;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.add-forgot:active { background: var(--card-raised); }
 
 /* ---------- Sheet ---------- */
 
@@ -337,7 +338,7 @@ button:active { opacity: 0.7; }
   max-width: 480px;
   margin: 0 auto;
   padding: 12px 20px calc(28px + env(safe-area-inset-bottom));
-  background: var(--sheet);
+  background: var(--card);
   border-radius: 28px 28px 0 0;
   text-align: center;
   transform: translateY(100%);
@@ -355,16 +356,20 @@ button:active { opacity: 0.7; }
   height: 5px;
   margin: 0 auto 20px;
   border-radius: 3px;
-  background: var(--line);
+  background: var(--divider);
 }
 
 .sheet-label {
   margin: 0 0 8px;
   font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
+
+.sheet[data-tone="skin"] .sheet-label { color: var(--skin); }
+.sheet[data-tone="hair"] .sheet-label { color: var(--hair); }
 
 .sheet-title {
   margin: 0;
@@ -376,14 +381,14 @@ button:active { opacity: 0.7; }
 .sheet-sub {
   margin: 14px 0 0;
   font-size: 16px;
-  color: var(--muted);
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .sheet-hint {
   margin: 24px 0 0;
   font-size: 14px;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 .sheet-sub:empty, .sheet-hint:empty { display: none; }
@@ -391,7 +396,7 @@ button:active { opacity: 0.7; }
 .sheet-actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   margin-top: 28px;
 }
 
@@ -401,21 +406,25 @@ button:active { opacity: 0.7; }
   min-height: 54px;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid #333;
-  background: var(--btn);
+  border: none;
+  background: var(--card-raised);
+  color: var(--text);
   font-size: 17px;
 }
 
+/* The one coloured button per screen. */
 .sheet-actions button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #111;
+  background: var(--skin);
+  color: var(--on-skin);
   font-weight: 600;
 }
 
+.sheet[data-tone="hair"] .sheet-actions button.primary { background: var(--hair); }
+
 .sheet-actions button.quiet {
   background: none;
-  border-color: transparent;
-  color: var(--muted);
+  color: var(--text-secondary);
   min-height: 44px;
 }
+
+button:active { opacity: 0.75; }

@@ -153,18 +153,20 @@ function renderTrack() {
   if (!show) return;
 
   const next = R.SLOTS[hair.next];
-  const progress = hair.lastNight
-    ? `${hair.done} of ${hair.of} done · last one ${shortDate(hair.lastNight)}`
-    : 'No masks logged yet';
+  // Progress in plum; "last one Oct 30" stays secondary grey.
+  const meta = hair.lastNight
+    ? [el('span', { className: 'progress', textContent: `${hair.done} of ${hair.of} done` }),
+      ` · last one ${shortDate(hair.lastNight)}`]
+    : [el('span', { className: 'progress', textContent: 'No masks logged yet' })];
 
   const add = el('button', { className: 'add', type: 'button', textContent: '+' });
   add.setAttribute('aria-label', 'Log a hair mask');
   add.addEventListener('click', () => showHair(night));
 
-  container.append(el('article', { className: 'card hair-track' }, [
+  container.append(el('article', { className: 'card hair' }, [
     el('div', { className: 'card-head' }, [el('h3', { textContent: 'Haircare' }), add]),
     el('p', { textContent: `Next: ${next.product}` }),
-    el('p', { className: 'meta', textContent: progress }),
+    el('p', { className: 'meta' }, meta),
   ]));
 }
 
@@ -201,9 +203,9 @@ function renderHistory() {
       undo.addEventListener('click', () => setEntries(R.removeEntry(state.entries, entry.id)));
       head.append(undo);
     }
-    container.append(el('article', { className: 'card' }, [
+    container.append(el('article', { className: `card ${entry.routine}` }, [
       head,
-      el('p', { textContent: timeOf(entry) }),
+      el('p', { className: 'time', textContent: timeOf(entry) }),
       el('p', { textContent: entryText(entry) }),
     ]));
   }
@@ -220,7 +222,9 @@ function isSheetOpen() {
 }
 
 // buttons: [{ text, style: 'primary' | 'quiet' | undefined, onClick }]
-function showSheet({ label, title, sub = '', hint = '', buttons }) {
+// tone: 'skin' (rose) or 'hair' (plum) colours the label and main button.
+function showSheet({ tone = '', label, title, sub = '', hint = '', buttons }) {
+  sheetEl.querySelector('.sheet').dataset.tone = tone;
   document.getElementById('sheet-label').textContent = label;
   document.getElementById('sheet-title').textContent = title;
   document.getElementById('sheet-sub').textContent = sub;
@@ -282,7 +286,7 @@ function showLastNight() {
     else closeSheet();
   };
   showSheet({
-    label: 'Last night',
+    tone: 'skin', label: 'Last night',
     title: 'What did you use last night?',
     buttons: [
       { text: R.SLOTS.retinoid.short, onClick: answer('used', 'retinoid') },
@@ -300,7 +304,7 @@ function showTonight() {
 
   if (suggestion.kind === 'rest') {
     showSheet({
-      label: 'Tonight',
+      tone: 'skin', label: 'Tonight',
       title: 'Rest night',
       sub: `You weren't sure about last night, so a rest night is the safe choice. ${lastActiveText(night)}.`,
       buttons: [
@@ -312,7 +316,7 @@ function showTonight() {
   }
 
   showSheet({
-    label: 'Tonight',
+    tone: 'skin', label: 'Tonight',
     title: R.SLOTS[suggestion.slot].product,
     sub: lastActiveText(night),
     buttons: [
@@ -325,7 +329,7 @@ function showTonight() {
 
 function showOtherSkin(night, slots) {
   showSheet({
-    label: 'Tonight',
+    tone: 'skin', label: 'Tonight',
     title: 'Used something else',
     hint: 'Which one did you actually use?',
     buttons: [
@@ -354,19 +358,19 @@ function logSkinProduct(night, slot, { addedLater = false, back = null } = {}) {
   if (addedLater) {
     // It already happened, so the question is only "is this right?"
     showSheet({
-      label: 'Heads up',
+      tone: 'skin', label: 'Heads up',
       title: `You used the ${CALLED[slot]} ${when} too`,
       sub: 'Check this is right before saving.',
       buttons: [
-        { text: 'Log it anyway', style: 'primary', onClick: log(slot) },
-        { text: 'Choose again', onClick: back },
+        { text: 'Choose again', style: 'primary', onClick: back },
+        { text: 'Log it anyway', onClick: log(slot) },
       ],
     });
     return;
   }
 
   showSheet({
-    label: 'Heads up',
+    tone: 'skin', label: 'Heads up',
     title: `You used the ${CALLED[slot]} ${when} too`,
     sub: 'Keep the BHA and the retinoid on separate nights so your skin doesn\'t get irritated.',
     buttons: [
@@ -388,7 +392,7 @@ function showHair(night) {
     : 'No masks logged yet';
 
   showSheet({
-    label: 'Hair mask',
+    tone: 'hair', label: 'Hair mask',
     title: R.SLOTS[hair.next].product,
     sub: progress,
     buttons: [
@@ -396,7 +400,7 @@ function showHair(night) {
       {
         text: 'Used something else',
         onClick: () => showSheet({
-          label: 'Hair mask',
+          tone: 'hair', label: 'Hair mask',
           title: 'Used something else',
           hint: 'Which one did you actually use?',
           buttons: [
@@ -429,7 +433,7 @@ function showAddForgot(night) {
 function showForgotSkin(night) {
   const back = () => showForgotSkin(night);
   showSheet({
-    label: dayLabel(night),
+    tone: 'skin', label: dayLabel(night),
     title: 'Skincare',
     hint: 'What did you use that night?',
     buttons: [
@@ -445,7 +449,7 @@ function showForgotSkin(night) {
 
 function showForgotHair(night) {
   showSheet({
-    label: dayLabel(night),
+    tone: 'hair', label: dayLabel(night),
     title: 'Hair mask',
     hint: 'Which one did you use?',
     buttons: [
