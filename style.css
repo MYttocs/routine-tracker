@@ -42,6 +42,15 @@ button {
   font-family: inherit;
   color: inherit;
   cursor: pointer;
+  /* No double-tap zoom or text selection on quick taps. */
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ---------- Header ---------- */

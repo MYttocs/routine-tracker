@@ -16,9 +16,17 @@ function selectedNight() {
 
 function setEntries(entries) {
   state.entries = entries;
-  R.save(entries);
+  try {
+    R.save(entries);
+  } catch (err) {
+    console.error(err);
+    alert('Could not save on this phone. The entry is shown but may be lost when the app closes.');
+  }
   render();
 }
+
+// Ask the browser not to clear the log when the phone is low on space.
+navigator.storage?.persist?.().catch(() => {});
 
 // ---------- Formatting ----------
 
@@ -266,11 +274,9 @@ function lastActiveText(night) {
 function showLastNight() {
   const night = R.addDays(today(), -1);
   const answer = (kind, slot) => () => {
-    state.entries = R.addEntry(state.entries, {
+    setEntries(R.addEntry(state.entries, {
       routine: 'skin', kind, slot, night, now: new Date(), addedLater: true,
-    });
-    R.save(state.entries);
-    render();
+    }));
     const now = new Date();
     if (R.isEvening(now) && !R.skinEntryFor(state.entries, today())) showTonight();
     else closeSheet();
