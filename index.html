@@ -14,33 +14,27 @@
 <body>
 <main id="app">
 
-  <section class="card">
-    <p class="label">Tonight</p>
-    <h1 id="tonight-product">—</h1>
-    <p class="sub" id="last-active">—</p>
+  <header class="top">
+    <h1 id="day-title">Today</h1>
+  </header>
 
-    <div class="actions">
-      <button id="btn-used" class="primary">Used it</button>
-      <button id="btn-skipped">Skipped / rest night</button>
-      <button id="btn-other-toggle">Used something else</button>
-    </div>
+  <nav class="strip" aria-label="Choose a day">
+    <div class="week" id="week"></div>
+  </nav>
 
-    <div id="other-choices" class="other-choices hidden">
-      <p class="hint">Which one did you actually use?</p>
-      <button data-type="used-bha" class="choice">COSRX BHA</button>
-      <button data-type="used-retinoid" class="choice">Retinoid</button>
-    </div>
+  <section id="track" class="section">
+    <h2>Track</h2>
+    <div id="track-cards" class="cards"></div>
   </section>
 
-  <details class="history">
-    <summary>History</summary>
-    <ul id="history-list"></ul>
-  </details>
-
-  <button id="btn-undo" class="undo">Undo last entry</button>
+  <section class="section">
+    <h2>History</h2>
+    <div id="history-cards" class="cards"></div>
+  </section>
 
 </main>
 
+<script src="rules.js"></script>
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

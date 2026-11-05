@@ -1,8 +1,9 @@
-const CACHE_NAME = 'routine-tracker-v1';
+const CACHE_NAME = 'routine-tracker-v2';
 const APP_SHELL = [
   './',
   './index.html',
   './style.css',
+  './rules.js',
   './app.js',
   './manifest.json',
 ];

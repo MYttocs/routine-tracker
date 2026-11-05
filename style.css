@@ -1,11 +1,15 @@
 :root {
   color-scheme: dark;
   --bg: #111111;
-  --card: #1b1b1b;
+  --line: #3a3a3a;
+  --card: #4a4a4a;
+  --hair: #2f1d52;
+  --hair-accent: #b9a3e8;
   --text: #f5f5f5;
-  --muted: #9a9a9a;
+  --muted: #b0b0b0;
+  --day: #9e9e9e;
+  --day-logged: #4b7783;
   --accent: #e8e8e8;
-  --danger: #c25b4a;
 }
 
 * { box-sizing: border-box; }
@@ -14,7 +18,8 @@ html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -23,122 +28,168 @@ body {
 }
 
 #app {
-  max-width: 420px;
+  max-width: 480px;
   margin: 0 auto;
-  padding: 24px 20px 40px;
-}
-
-.card {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 28px 20px;
-  text-align: center;
-}
-
-.label {
-  margin: 0 0 4px;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-#tonight-product {
-  margin: 0 0 12px;
-  font-size: 30px;
-  line-height: 1.2;
-  font-weight: 600;
-}
-
-.sub {
-  margin: 0 0 24px;
-  font-size: 15px;
-  color: var(--muted);
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding-bottom: 40px;
 }
 
 button {
   font-family: inherit;
-  font-size: 16px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid #333;
-  background: #262626;
-  color: var(--text);
-  min-height: 48px;
+  color: inherit;
   cursor: pointer;
 }
 
-button.primary {
-  background: var(--accent);
-  color: #111;
-  border-color: var(--accent);
-  font-weight: 600;
+/* ---------- Header ---------- */
+
+.top {
+  padding: 40px 16px 20px;
+  text-align: center;
 }
 
-button:active {
-  opacity: 0.8;
+.top h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
 }
 
-.other-choices {
-  margin-top: 16px;
+/* ---------- Date strip ---------- */
+
+.strip {
+  border-top: 1px solid var(--line);
+}
+
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0 8px;
+}
+
+.day {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 8px;
+  background: none;
+  border: none;
 }
 
-.other-choices.hidden {
-  display: none;
+/* The selected day is marked by a small arrow under the line. */
+.day.selected::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: var(--line);
 }
 
-.hint {
-  margin: 0 0 4px;
-  font-size: 13px;
-  color: var(--muted);
+.day .letter {
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.history {
-  margin-top: 20px;
+.day .num {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--day);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
 }
 
-.history summary {
-  padding: 10px 4px;
-  color: var(--muted);
-  cursor: pointer;
+.day.logged .num { background: var(--day-logged); }
+
+.day:disabled { cursor: default; }
+.day:disabled .num { opacity: 0.35; }
+
+/* ---------- Sections and cards ---------- */
+
+.section {
+  padding: 0 16px;
 }
 
-#history-list {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  font-size: 14px;
-  color: var(--text);
+.section h2 {
+  margin: 28px 0 16px;
+  font-size: 22px;
+  font-weight: 700;
 }
 
-#history-list li {
-  padding: 8px 4px;
-  border-bottom: 1px solid #262626;
+.cards {
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 18px 22px 20px;
+}
+
+.card.hair-track { background: var(--hair); }
+
+.card-head {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid currentColor;
+  min-height: 40px;
 }
 
-#history-list li span.date {
+.card-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.card p {
+  margin: 12px 0 0;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.card .meta {
   color: var(--muted);
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.card.hair-track .meta { color: var(--hair-accent); }
+
+.add {
+  width: 40px;
+  height: 40px;
+  margin: -8px -8px -8px 0;
+  border: none;
+  background: none;
+  color: var(--hair-accent);
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
 }
 
 .undo {
-  display: block;
-  margin: 16px auto 0;
-  background: none;
   border: none;
-  color: var(--danger);
+  background: none;
+  color: var(--muted);
   font-size: 14px;
-  min-height: auto;
-  padding: 10px;
+  padding: 8px;
+  margin: -8px -8px -8px 0;
+  text-decoration: underline;
 }
+
+.empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+button:active { opacity: 0.7; }
