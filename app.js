@@ -38,6 +38,7 @@ function shortDate(night) {
 }
 
 function timeOf(entry) {
+  if (entry.addedLater) return 'Added later';
   const d = new Date(entry.loggedAt);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
@@ -116,14 +117,9 @@ function renderTrack() {
     ? `${hair.done} of ${hair.of} done · last one ${shortDate(hair.lastNight)}`
     : 'No masks logged yet';
 
-  // For now + logs the suggested mask directly; step 3 opens the sheet instead.
   const add = el('button', { className: 'add', type: 'button', textContent: '+' });
-  add.setAttribute('aria-label', `Log ${next.product}`);
-  add.addEventListener('click', () => {
-    setEntries(R.addEntry(state.entries, {
-      routine: 'hair', kind: 'used', slot: hair.next, night, now: new Date(),
-    }));
-  });
+  add.setAttribute('aria-label', 'Log a hair mask');
+  add.addEventListener('click', () => showHair(night));
 
   container.append(el('article', { className: 'card hair-track' }, [
     el('div', { className: 'card-head' }, [el('h3', { textContent: 'Haircare' }), add]),
@@ -168,6 +164,199 @@ function renderHistory() {
   }
 }
 
+// ---------- Sheet ----------
+// One layout reused for: the last-night question, tonight's skincare,
+// logging a hair mask, and the same-active warning.
+
+const sheetEl = document.getElementById('sheet');
+
+function isSheetOpen() {
+  return sheetEl.classList.contains('open');
+}
+
+// buttons: [{ text, style: 'primary' | 'quiet' | undefined, onClick }]
+function showSheet({ label, title, sub = '', hint = '', buttons }) {
+  document.getElementById('sheet-label').textContent = label;
+  document.getElementById('sheet-title').textContent = title;
+  document.getElementById('sheet-sub').textContent = sub;
+  document.getElementById('sheet-hint').textContent = hint;
+
+  const actions = document.getElementById('sheet-actions');
+  actions.replaceChildren(...buttons.map(({ text, style, onClick }) => {
+    const btn = el('button', { type: 'button', textContent: text, className: style || '' });
+    btn.addEventListener('click', onClick);
+    return btn;
+  }));
+
+  sheetEl.classList.add('open');
+  sheetEl.setAttribute('aria-hidden', 'false');
+}
+
+function closeSheet() {
+  sheetEl.classList.remove('open');
+  sheetEl.setAttribute('aria-hidden', 'true');
+}
+
+sheetEl.querySelector('[data-close]').addEventListener('click', closeSheet);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && isSheetOpen()) closeSheet();
+});
+
+// ---------- Skincare flows ----------
+
+// How products are called in sentences ("You used the serum last night too").
+const CALLED = { exfoliant: 'COSRX BHA', retinoid: 'serum' };
+
+function otherSkin(slot) {
+  return slot === 'exfoliant' ? 'retinoid' : 'exfoliant';
+}
+
+function logAndClose(fields) {
+  closeSheet();
+  setEntries(R.addEntry(state.entries, { now: new Date(), ...fields }));
+}
+
+function lastActiveText(night) {
+  const last = R.lastActiveBefore(state.entries, night);
+  if (!last) return 'No actives logged yet';
+  const n = R.nightsBetween(last.night, night);
+  const when = n === 1 ? 'yesterday' : `${n} nights ago`;
+  return `Last active: ${R.SLOTS[last.slot].short}, ${when}`;
+}
+
+// State A: last night has no entry, so ask before suggesting anything.
+// The answer is a fact about the past, so it's saved without a warning.
+function showLastNight() {
+  const night = R.addDays(today(), -1);
+  const answer = (kind, slot) => () => {
+    state.entries = R.addEntry(state.entries, {
+      routine: 'skin', kind, slot, night, now: new Date(), addedLater: true,
+    });
+    R.save(state.entries);
+    render();
+    const now = new Date();
+    if (R.isEvening(now) && !R.skinEntryFor(state.entries, today())) showTonight();
+    else closeSheet();
+  };
+  showSheet({
+    label: 'Last night',
+    title: 'What did you use last night?',
+    buttons: [
+      { text: R.SLOTS.retinoid.short, onClick: answer('used', 'retinoid') },
+      { text: R.SLOTS.exfoliant.short, onClick: answer('used', 'exfoliant') },
+      { text: 'Nothing / not sure', onClick: answer('unsure', null) },
+    ],
+  });
+}
+
+// State B: tonight's skincare.
+function showTonight() {
+  const night = today();
+  const suggestion = R.skinSuggestion(state.entries, night);
+  const skip = { text: 'Skipped / rest night', onClick: () => logAndClose({ routine: 'skin', kind: 'skipped', night }) };
+
+  if (suggestion.kind === 'rest') {
+    showSheet({
+      label: 'Tonight',
+      title: 'Rest night',
+      sub: `You weren't sure about last night, so a rest night is the safe choice. ${lastActiveText(night)}.`,
+      buttons: [
+        { ...skip, style: 'primary' },
+        { text: 'Used something else', onClick: () => showOtherSkin(night, ['retinoid', 'exfoliant']) },
+      ],
+    });
+    return;
+  }
+
+  showSheet({
+    label: 'Tonight',
+    title: R.SLOTS[suggestion.slot].product,
+    sub: lastActiveText(night),
+    buttons: [
+      { text: 'Used it', style: 'primary', onClick: () => logSkinProduct(night, suggestion.slot) },
+      skip,
+      { text: 'Used something else', onClick: () => showOtherSkin(night, [otherSkin(suggestion.slot)]) },
+    ],
+  });
+}
+
+function showOtherSkin(night, slots) {
+  showSheet({
+    label: 'Tonight',
+    title: 'Used something else',
+    hint: 'Which one did you actually use?',
+    buttons: [
+      ...slots.map((slot) => ({ text: R.SLOTS[slot].product, onClick: () => logSkinProduct(night, slot) })),
+      { text: 'Back', style: 'quiet', onClick: showTonight },
+    ],
+  });
+}
+
+// Logs a product, or warns first if it repeats the nearest active (state D).
+function logSkinProduct(night, slot) {
+  const repeat = R.repeatedActive(state.entries, night, slot);
+  if (!repeat) {
+    logAndClose({ routine: 'skin', kind: 'used', slot, night });
+    return;
+  }
+  const n = Math.abs(R.nightsBetween(repeat.night, night));
+  const when = repeat.night < night
+    ? (n === 1 ? 'last night' : `${n} nights ago`)
+    : (n === 1 ? 'the night after' : `${n} nights later`);
+  const other = otherSkin(slot);
+  showSheet({
+    label: 'Heads up',
+    title: `You used the ${CALLED[slot]} ${when} too`,
+    sub: 'Keep the BHA and the retinoid on separate nights so your skin doesn\'t get irritated.',
+    buttons: [
+      { text: `Use the ${CALLED[other]} instead`, style: 'primary', onClick: () => logAndClose({ routine: 'skin', kind: 'used', slot: other, night }) },
+      { text: 'Log it anyway', onClick: () => logAndClose({ routine: 'skin', kind: 'used', slot, night }) },
+    ],
+  });
+}
+
+// ---------- Hair flow ----------
+
+// State C: logging a hair mask from the Track card.
+function showHair(night) {
+  const hair = R.hairStatus(state.entries, night);
+  const other = hair.next === 'protein' ? 'moisture' : 'protein';
+  const log = (slot) => () => logAndClose({ routine: 'hair', kind: 'used', slot, night });
+  const progress = hair.lastNight
+    ? `${hair.done} of ${hair.of} done · last one ${shortDate(hair.lastNight)}`
+    : 'No masks logged yet';
+
+  showSheet({
+    label: 'Hair mask',
+    title: R.SLOTS[hair.next].product,
+    sub: progress,
+    buttons: [
+      { text: 'Used it', style: 'primary', onClick: log(hair.next) },
+      {
+        text: 'Used something else',
+        onClick: () => showSheet({
+          label: 'Hair mask',
+          title: 'Used something else',
+          hint: 'Which one did you actually use?',
+          buttons: [
+            { text: R.SLOTS[other].product, onClick: log(other) },
+            { text: 'Back', style: 'quiet', onClick: () => showHair(night) },
+          ],
+        }),
+      },
+    ],
+  });
+}
+
+// ---------- Opening the app ----------
+
+function checkOpeningSheet() {
+  if (isSheetOpen()) return;
+  const which = R.openingSheet(state.entries, new Date());
+  if (which === 'last-night') showLastNight();
+  else if (which === 'tonight') showTonight();
+}
+
 // ---------- Render ----------
 
 function render() {
@@ -177,9 +366,14 @@ function render() {
   renderHistory();
 }
 
-// If the app stays open past 4 am, move "today" forward when it's shown again.
+// Coming back to the app counts as opening it: move "today" forward if it's
+// past 4 am, and show the right sheet.
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) render();
+  if (document.hidden) return;
+  state.entries = R.load();
+  render();
+  checkOpeningSheet();
 });
 
 render();
+checkOpeningSheet();
