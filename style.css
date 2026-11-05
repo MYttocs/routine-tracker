@@ -1,0 +1,144 @@
+:root {
+  color-scheme: dark;
+  --bg: #111111;
+  --card: #1b1b1b;
+  --text: #f5f5f5;
+  --muted: #9a9a9a;
+  --accent: #e8e8e8;
+  --danger: #c25b4a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+#app {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.label {
+  margin: 0 0 4px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#tonight-product {
+  margin: 0 0 12px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.sub {
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+button {
+  font-family: inherit;
+  font-size: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  background: #262626;
+  color: var(--text);
+  min-height: 48px;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+button:active {
+  opacity: 0.8;
+}
+
+.other-choices {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.other-choices.hidden {
+  display: none;
+}
+
+.hint {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.history {
+  margin-top: 20px;
+}
+
+.history summary {
+  padding: 10px 4px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+#history-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+#history-list li {
+  padding: 8px 4px;
+  border-bottom: 1px solid #262626;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#history-list li span.date {
+  color: var(--muted);
+}
+
+.undo {
+  display: block;
+  margin: 16px auto 0;
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 14px;
+  min-height: auto;
+  padding: 10px;
+}
