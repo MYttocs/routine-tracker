@@ -67,16 +67,45 @@ function weekStart(night) {
   return R.addDays(night, -offset);
 }
 
-function renderWeek() {
-  const container = document.getElementById('week');
-  const start = weekStart(selectedNight());
+// Markers for a day: one per skincare product used, one for a hair mask.
+// Skipped and unsure nights get none.
+function markersFor(entries) {
+  const marks = [];
+  const skin = entries.find((e) => e.routine === 'skin' && e.kind === 'used');
+  if (skin) marks.push(skin.slot);
+  if (entries.some((e) => e.routine === 'hair')) marks.push('hair');
+  return marks;
+}
+
+// How far back the strip goes: at least 8 weeks, or to the first entry.
+const MIN_WEEKS_BACK = 8;
+
+function renderStrip() {
+  const scroller = document.getElementById('weeks');
   const now = today();
-  container.replaceChildren();
+  const thisWeek = weekStart(now);
+  const earliest = state.entries.reduce((min, e) => (e.night < min ? e.night : min), R.addDays(now, -7 * MIN_WEEKS_BACK));
+
+  const weeks = [];
+  for (let w = weekStart(earliest); w <= thisWeek; w = R.addDays(w, 7)) {
+    weeks.push(renderWeek(w, now));
+  }
+  scroller.replaceChildren(...weeks);
+
+  // Show the week that holds the selected day.
+  const index = weeks.findIndex((w) => w.dataset.start === weekStart(selectedNight()));
+  scroller.scrollLeft = index * scroller.clientWidth;
+}
+
+function renderWeek(start, now) {
+  const container = el('div', { className: 'week' });
+  container.dataset.start = start;
 
   for (let i = 0; i < 7; i++) {
     const night = R.addDays(start, i);
     const d = R.parseNight(night);
-    const logged = R.entriesForNight(state.entries, night).length > 0;
+    const entries = R.entriesForNight(state.entries, night);
+    const logged = entries.length > 0;
 
     const btn = el('button', {
       className: 'day',
@@ -85,6 +114,8 @@ function renderWeek() {
     }, [
       el('span', { className: 'letter', textContent: DAY_LETTERS[d.getDay()] }),
       el('span', { className: 'num', textContent: d.getDate() }),
+      el('span', { className: 'marks' },
+        markersFor(entries).map((m) => el('i', { className: `mark ${m}` }))),
     ]);
     btn.classList.toggle('selected', night === selectedNight());
     btn.classList.toggle('logged', logged);
@@ -96,6 +127,7 @@ function renderWeek() {
     });
     container.append(btn);
   }
+  return container;
 }
 
 // ---------- Track ----------
@@ -136,6 +168,9 @@ function renderHistory() {
   const entries = R.entriesForNight(state.entries, night);
   container.replaceChildren();
 
+  // Past days can be filled in afterwards.
+  document.getElementById('add-forgot').hidden = night === today();
+
   if (!entries.length) {
     container.append(el('p', {
       className: 'empty',
@@ -151,7 +186,9 @@ function renderHistory() {
     const head = el('div', { className: 'card-head' }, [
       el('h3', { textContent: entry.routine === 'skin' ? 'Skincare' : 'Haircare' }),
     ]);
-    if (night === today()) {
+    // Undo works for anything logged today, and for anything added later
+    // (including the answer to "What did you use last night?").
+    if (night === today() || entry.addedLater) {
       const undo = el('button', { className: 'undo', type: 'button', textContent: 'Undo' });
       undo.addEventListener('click', () => setEntries(R.removeEntry(state.entries, entry.id)));
       head.append(undo);
@@ -293,17 +330,35 @@ function showOtherSkin(night, slots) {
 }
 
 // Logs a product, or warns first if it repeats the nearest active (state D).
-function logSkinProduct(night, slot) {
+// For a past day (addedLater), `back` returns to the choice.
+function logSkinProduct(night, slot, { addedLater = false, back = null } = {}) {
+  const log = (s) => () => logAndClose({ routine: 'skin', kind: 'used', slot: s, night, addedLater });
   const repeat = R.repeatedActive(state.entries, night, slot);
   if (!repeat) {
-    logAndClose({ routine: 'skin', kind: 'used', slot, night });
+    log(slot)();
     return;
   }
   const n = Math.abs(R.nightsBetween(repeat.night, night));
+  const isTonight = night === today();
   const when = repeat.night < night
-    ? (n === 1 ? 'last night' : `${n} nights ago`)
+    ? (n === 1 ? (isTonight ? 'last night' : 'the night before') : `${n} nights ${isTonight ? 'ago' : 'before'}`)
     : (n === 1 ? 'the night after' : `${n} nights later`);
   const other = otherSkin(slot);
+
+  if (addedLater) {
+    // It already happened, so the question is only "is this right?"
+    showSheet({
+      label: 'Heads up',
+      title: `You used the ${CALLED[slot]} ${when} too`,
+      sub: 'Check this is right before saving.',
+      buttons: [
+        { text: 'Log it anyway', style: 'primary', onClick: log(slot) },
+        { text: 'Choose again', onClick: back },
+      ],
+    });
+    return;
+  }
+
   showSheet({
     label: 'Heads up',
     title: `You used the ${CALLED[slot]} ${when} too`,
@@ -348,6 +403,62 @@ function showHair(night) {
   });
 }
 
+// ---------- Adding something forgotten to a past day ----------
+
+function dayLabel(night) {
+  return R.parseNight(night).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function showAddForgot(night) {
+  const buttons = [];
+  // One skincare entry per night: undo the existing one to change it.
+  if (!R.skinEntryFor(state.entries, night)) {
+    buttons.push({ text: 'Skincare', onClick: () => showForgotSkin(night) });
+  }
+  buttons.push({ text: 'Hair mask', onClick: () => showForgotHair(night) });
+  buttons.push({ text: 'Cancel', style: 'quiet', onClick: closeSheet });
+  showSheet({ label: dayLabel(night), title: 'What did you forget to log?', buttons });
+}
+
+function showForgotSkin(night) {
+  const back = () => showForgotSkin(night);
+  showSheet({
+    label: dayLabel(night),
+    title: 'Skincare',
+    hint: 'What did you use that night?',
+    buttons: [
+      ...['retinoid', 'exfoliant'].map((slot) => ({
+        text: R.SLOTS[slot].product,
+        onClick: () => logSkinProduct(night, slot, { addedLater: true, back }),
+      })),
+      { text: 'Skipped / rest night', onClick: () => logAndClose({ routine: 'skin', kind: 'skipped', night, addedLater: true }) },
+      { text: 'Back', style: 'quiet', onClick: () => showAddForgot(night) },
+    ],
+  });
+}
+
+function showForgotHair(night) {
+  showSheet({
+    label: dayLabel(night),
+    title: 'Hair mask',
+    hint: 'Which one did you use?',
+    buttons: [
+      ...['moisture', 'protein'].map((slot) => ({
+        text: R.SLOTS[slot].product,
+        onClick: () => logAndClose({ routine: 'hair', kind: 'used', slot, night, addedLater: true }),
+      })),
+      { text: 'Back', style: 'quiet', onClick: () => showAddForgot(night) },
+    ],
+  });
+}
+
+document.getElementById('add-forgot').addEventListener('click', () => showAddForgot(selectedNight()));
+
+document.getElementById('go-today').addEventListener('click', () => {
+  state.selected = null;
+  render();
+});
+
 // ---------- Opening the app ----------
 
 function checkOpeningSheet() {
@@ -361,7 +472,8 @@ function checkOpeningSheet() {
 
 function render() {
   document.getElementById('day-title').textContent = dayTitle(selectedNight());
-  renderWeek();
+  document.getElementById('go-today').hidden = selectedNight() === today();
+  renderStrip();
   renderTrack();
   renderHistory();
 }

@@ -19,7 +19,12 @@
   </header>
 
   <nav class="strip" aria-label="Choose a day">
-    <div class="week" id="week"></div>
+    <div class="weeks" id="weeks"></div>
+    <p class="legend" aria-hidden="true">
+      <span><i class="mark exfoliant"></i>BHA</span>
+      <span><i class="mark retinoid"></i>Serum</span>
+      <span><i class="mark hair"></i>Hair mask</span>
+    </p>
   </nav>
 
   <section id="track" class="section">
@@ -28,8 +33,12 @@
   </section>
 
   <section class="section">
-    <h2>History</h2>
+    <div class="section-head">
+      <h2>History</h2>
+      <button id="go-today" class="go-today" type="button" hidden>Back to today</button>
+    </div>
     <div id="history-cards" class="cards"></div>
+    <button id="add-forgot" class="add-forgot" type="button" hidden>+ Add something I forgot</button>
   </section>
 
 </main>

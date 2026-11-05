@@ -12,6 +12,9 @@
   --accent: #e8e8e8;
   --sheet: #1c1c1c;
   --btn: #262626;
+  --m-bha: #f2c46d;
+  --m-retinoid: #ef8fb3;
+  --m-hair: #b9a3e8;
 }
 
 * { box-sizing: border-box; }
@@ -60,10 +63,106 @@ button {
   border-top: 1px solid var(--line);
 }
 
+/* Weeks sit side by side; swipe sideways to go back in time. */
+.weeks {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.weeks::-webkit-scrollbar { display: none; }
+
 .week {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding: 0 8px;
+}
+
+/* Markers: a different shape per product so they read at a small size. */
+.marks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 10px;
+}
+
+.mark {
+  display: inline-block;
+  flex: none;
+}
+
+.mark.exfoliant {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m-bha);
+}
+
+.mark.retinoid {
+  width: 7px;
+  height: 7px;
+  margin: 0 1px;
+  transform: rotate(45deg);
+  background: var(--m-retinoid);
+}
+
+.mark.hair {
+  width: 10px;
+  height: 9px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: var(--m-hair);
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 4px 0 0;
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 16px;
+}
+
+.section .section-head h2 { margin: 0; }
+
+.go-today {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+}
+
+.go-today[hidden], .add-forgot[hidden] { display: none; }
+
+.add-forgot {
+  width: 100%;
+  margin-top: 16px;
+  min-height: 54px;
+  border: 1px dashed var(--line);
+  border-radius: 24px;
+  background: none;
+  font-size: 16px;
+  color: var(--muted);
 }
 
 .day {
@@ -71,8 +170,8 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 16px 0 8px;
+  gap: 8px;
+  padding: 16px 0 6px;
   background: none;
   border: none;
 }
